@@ -1,0 +1,19 @@
+%% set the working directory
+clear all
+restoredefaultpath
+cd \\ccn-woldorffser.win.duke.edu\data1\Projects\April\cuedAttIntf;
+dataPath = 'C:\Users\adr25\Desktop\data\';
+eeglabDir = 'matlab_apps/eeglab13_2_2b/';
+
+
+%should eventually loop through entire folder..
+%subjectID ={'2713'};
+%need to run eye blink ICA on 2713...
+subjectID = {'2700' '2711' '2713' '2717' '2718'}; 
+%establish bad channels to be interpolated in preprocessing.m
+%interp = {[7 15 16 43 44]};
+interp = {[43 44 52] [8 15] [7 15 16 43 44] [16 52] [63 59 26 41]}; 
+ICA = {[3] }
+%%
+
+open analysis\eegAnalysis\preprocessing.m
