@@ -1,4 +1,4 @@
-function [freq] = ft_freqbaseline(cfg, freq)
+function [freq] = ft_freqbaseline_custom(cfg, freq)
 
 % FT_FREQBASELINE performs baseline normalization for time-frequency data
 %
