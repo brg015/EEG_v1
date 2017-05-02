@@ -1,7 +1,6 @@
 function EEG=eeg_basic(ica_time,pre,iSubj,pdir)
 
 global RUN;
-
 chopSui=fullfile(RUN.dir.raw,RUN.dir.subjects{iSubj},pdir,[RUN.dir.subjects{iSubj} '_chopped.set']);
 if ~exist(chopSui,'file')
     display('You must examine data and ensure goodness');

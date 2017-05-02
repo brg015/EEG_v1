@@ -200,37 +200,6 @@ subj{s}.name='3520';
 subj{s}.pre.interp=[];
 subj{s}.pre.ICA=[1,2,4,5,6,7,8,9,10,11,12];
 
-s=s+1;
-subj{s}.name='3525';
-subj{s}.pre.interp=[];
-subj{s}.pre.ICA=[];
-
-s=s+1;
-subj{s}.name='3526';
-subj{s}.pre.interp=[47,27];
-subj{s}.pre.ICA=[];
-RUN.dir.plot(s)=0;
-
-s=s+1;
-subj{s}.name='3528';
-subj{s}.pre.interp=[28];
-subj{s}.pre.ICA=[];
-
-s=s+1;
-subj{s}.name='3540';
-subj{s}.pre.interp=[3];
-subj{s}.pre.ICA=[];
-
-s=s+1;
-subj{s}.name='3545';
-subj{s}.pre.interp=[3];
-subj{s}.pre.ICA=[];
-
-s=s+1;
-subj{s}.name='3547';
-subj{s}.pre.interp=[47,27];
-subj{s}.pre.ICA=[];
-
 for ii=1:length(RUN.dir.subjects)
     if ~strcmp(RUN.dir.subjects{ii},subj{ii}.name)
         error('Subject IDs defined wrong');
@@ -272,7 +241,7 @@ RUN.template.elp='/plugins/dipfit2.3/standard_BESA/standard-10-5-cap385.elp';
 RUN.template.plt='F:\SEA\Enc_EEG\EEG_v1-master\templates\layoutmw64_ActiChamp.mat';
 RUN.template.plt='F:\SEA\Enc_EEG\EEG_v1-master\templates\layoutmw64.mat';
 RUN.template.plt2='F:\SEA\Enc_EEG\EEG_v1-master\templates\layoutmw64_martyPlot.mat';
-RUN.template.plt3='C:\Users\brg13\Desktop\SEA\layoutmw64.mat';
+RUN.template.plt3='F:\Data2\SEA\layoutmw64.mat';
 
 RUN.template.COCA='D:\Data\SEFER\EEG\template\COCA.csv';
 RUN.template.dprime='D:\Data\SEFER\EEG\template\dprime.csv';
