@@ -6,8 +6,10 @@ function [freq] = ft_freqbaseline_custom(cfg, freq)
 %    [freq] = ft_freqbaseline(cfg, freq)
 % where the freq data comes from FT_FREQANALYSIS and the configuration
 % should contain
-%   cfg.baseline     = [begin end] (default = 'no')
-%   cfg.baselinetype = 'absolute', 'relchange', 'relative', or 'db' (default = 'absolute')
+%   cfg.baseline     = [begin end] (default = 'no'), alternatively an
+%                      Nfreq x 2 matrix can be specified, that provides
+%                      frequency specific baseline windows.
+%   cfg.baselinetype = 'absolute', 'relative', 'relchange', 'normchange' or 'db' (default = 'absolute')
 %   cfg.parameter    = field for which to apply baseline normalization, or
 %                      cell array of strings to specify multiple fields to normalize
 %                      (default = 'powspctrm')
@@ -23,7 +25,7 @@ function [freq] = ft_freqbaseline_custom(cfg, freq)
 % Copyright (C) 2005-2006, Robert Oostenveld
 % Copyright (C) 2011, Eelke Spaak
 %
-% This file is part of FieldTrip, see http://www.ru.nl/neuroimaging/fieldtrip
+% This file is part of FieldTrip, see http://www.fieldtriptoolbox.org
 % for the documentation and details.
 %
 %    FieldTrip is free software: you can redistribute it and/or modify
@@ -39,25 +41,28 @@ function [freq] = ft_freqbaseline_custom(cfg, freq)
 %    You should have received a copy of the GNU General Public License
 %    along with FieldTrip. If not, see <http://www.gnu.org/licenses/>.
 %
-% $Id: ft_freqbaseline.m 9520 2014-05-14 09:33:28Z roboos $
+% $Id$
 
-revision = '$Id: ft_freqbaseline.m 9520 2014-05-14 09:33:28Z roboos $';
+% these are used by the ft_preamble/ft_postamble function and scripts
+ft_revision = '$Id$';
+ft_nargin   = nargin;
+ft_nargout  = nargout;
 
 % do the general setup of the function
 ft_defaults
 ft_preamble init
-ft_preamble provenance
-ft_preamble trackconfig
 ft_preamble debug
 ft_preamble loadvar freq
+ft_preamble provenance freq
+ft_preamble trackconfig
 
-% the abort variable is set to true or false in ft_preamble_init
-if abort
+% the ft_abort variable is set to true or false in ft_preamble_init
+if ft_abort
   return
 end
 
 % check if the input data is valid for this function
-freq = ft_checkdata(freq, 'datatype', 'freq', 'feedback', 'yes');
+freq = ft_checkdata(freq, 'datatype', {'freq+comp', 'freq'}, 'feedback', 'yes');
 
 % update configuration fieldnames
 cfg              = ft_checkconfig(cfg, 'renamed', {'param', 'parameter'});
@@ -68,9 +73,9 @@ cfg.baselinetype =  ft_getopt(cfg, 'baselinetype', 'absolute');
 cfg.parameter    =  ft_getopt(cfg, 'parameter', 'powspctrm');
 
 % check validity of input options
-cfg =               ft_checkopt(cfg, 'baseline', {'char', 'doublevector'});
-cfg =               ft_checkopt(cfg, 'baselinetype', 'char', {'absolute', ...
-    'relative', 'relchange','db','db_trial','ztransformSession','logpower'});
+cfg =               ft_checkopt(cfg, 'baseline', {'char', 'doublevector', 'doublematrix'});
+cfg =               ft_checkopt(cfg, 'baselinetype', 'char', {'absolute', 'relative',...
+    'relchange', 'normchange', 'db', 'logpower', 'ztransformSession' ,'vssum'});
 cfg =               ft_checkopt(cfg, 'parameter', {'char', 'charcell'});
 
 % make sure cfg.parameter is a cell array of strings
@@ -92,6 +97,16 @@ elseif ischar(cfg.baseline) && strcmp(cfg.baseline, 'no')
   return
 end
 
+% allow for baseline to be nfreq x 2
+if size(cfg.baseline,1)==numel(freq.freq) && size(cfg.baseline,2)==2,
+  % this is ok
+elseif numel(cfg.baseline)==2,
+  % this is also ok
+  cfg.baseline = cfg.baseline(:)'; % ensure row vector
+else
+  error('cfg.baseline should either be a string, a 1x2 vector, or an Nfreqx2 matrix');
+end
+
 % check if the field of interest is present in the data
 if (~all(isfield(freq, cfg.parameter)))
   error('cfg.parameter should be a string or cell array of strings referring to (a) field(s) in the freq input structure')
@@ -102,21 +117,30 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize output structure
-freqOut        = [];
-freqOut.label  = freq.label;
-freqOut.freq   = freq.freq;
-freqOut.dimord = freq.dimord;
-freqOut.time   = freq.time;
+freqOut = keepfields(freq, {'label' 'freq' 'dimord' 'time'});
+freqOut = copyfields(freq, freqOut,...
+  {'grad', 'elec', 'trialinfo','topo', 'topolabel', 'unmixing'});
 
-if isfield(freq, 'grad')
-  freqOut.grad = freq.grad;
-end
-if isfield(freq, 'elec')
-  freqOut.elec = freq.elec;
-end
-if isfield(freq, 'trialinfo')
-  freqOut.trialinfo = freq.trialinfo;
-end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Computation of output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% initialize output structure
+% freqOut        = [];
+% freqOut.label  = freq.label;
+% freqOut.freq   = freq.freq;
+% freqOut.dimord = freq.dimord;
+% freqOut.time   = freq.time;
+% 
+% if isfield(freq, 'grad')
+%   freqOut.grad = freq.grad;
+% end
+% if isfield(freq, 'elec')
+%   freqOut.elec = freq.elec;
+% end
+% if isfield(freq, 'trialinfo')
+%   freqOut.trialinfo = freq.trialinfo;
+% end
 
 % loop over all fields that should be normalized
 % X=nanmean(nanmean(nanmean(freq.powspctrm,2),3),4);
