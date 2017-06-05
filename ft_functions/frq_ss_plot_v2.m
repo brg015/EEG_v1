@@ -50,9 +50,9 @@ try
     boxplot(val,'labels',tstruct.legend); title(['p = ' num2str(p)]); grid;
 catch err
 end
-%=========================================================================%
-% Paper Figures...
-%=========================================================================%
+%-------------------------------------------------------------------------%
+% Paper figures
+%-------------------------------------------------------------------------%
 figure(2); set(gcf,'color','w');
 cset={'k','k--'};
 
@@ -71,17 +71,18 @@ end
 t=dat{1}.time(dat_time{1});
 xl=cfg.type;
 
+
 for ii=1:length(dat)
     plot(t.*1000,b{ii},cset{ii},'linewidth',5); hold on;
 end
 hline=line([0 0],[get(gca,'Ylim')]); set(hline,'color',[.7 .7 .7]); set(hline,'linewidth',3);
-hline=line([-240 -240],[get(gca,'Ylim')]); set(hline,'color',[.7 .7 .7],'linestyle','--'); set(hline,'linewidth',3);
+% hline=line([-240 -240],[get(gca,'Ylim')]); set(hline,'color',[.7 .7 .7],'linestyle','--'); set(hline,'linewidth',3);
 for ii=1:length(dat)
     plot(t.*1000,b{ii},cset{ii},'linewidth',5); hold on;
 end
+set(gca,'FontSize',16); set(gca,'XLim',[t(1)*1000 t(end)*1000]);
 xlabel('Time (ms)','FontSize',16); ylabel(xl,'FontSize',16);
 legend(tstruct.legend,'location','SouthEast'); 
-set(gca,'FontSize',16);
 box off;
 set(gca,'TickDir','out');
 
@@ -91,33 +92,70 @@ x3=false(1,X(4)); x3(dat_time{ii})=1;
 X1=squeeze(mean(dat{1}.powspctrm(:,cfg.elec,:,x3),2));
 X2=squeeze(mean(dat{2}.powspctrm(:,cfg.elec,:,x3),2));
 [~,p,~,c1]=ttest(X1-X2);
-c1.tstat(p>0.05)=NaN;
+c1.tstat(p>0.05)=NaN; % c1.tstat(c1.tstat<0)=NaN;
 % imagesc(dat{1}.time(x3),dat{1}.freq,squeeze(c1.tstat)); 
 surf(dat{1}.time(x3)*1000,dat{1}.freq,squeeze(c1.tstat),'LineStyle','none');
 view(0,90); set(gca,'yscale','log'); 
 set(gca,'YTickLabel',[4 10 20 30 50])
 set(gca,'YTick',[4 10 20 30 50])
 set(gca,'YLim',[0 30]);
-set(gca,'CLim',[-4 4]);
+set(gca,'XLim',[t(1)*1000 t(end)*1000]);
 xlabel('Time (ms)','FontSize',16); ylabel('Freq (Hz)','FontSize',16);
 title('T-Test','FontSize',16); set(gca,'FontSize',16); set(gca,'YDir','normal');
+colormap('jet'); colorbar;
+%-------------------------------------------------------------------------%
+% Difference
+%-------------------------------------------------------------------------%
+figure(3); set(gcf,'color','w');
+subplot(2,1,1);
+for ii=1:length(dat)
+    plot(t.*1000,b{1}-b{2},'k-.','linewidth',1); hold on;
+end
+hline=refline(0,0); set(hline,'color',[.7 .7 .7]); set(hline,'linewidth',3);
+hline=line([0 0],[get(gca,'Ylim')]); set(hline,'color',[.7 .7 .7]); set(hline,'linewidth',3);
+% hline=line([-240 -240],[get(gca,'Ylim')]); set(hline,'color',[.7 .7 .7],'linestyle','--'); set(hline,'linewidth',3);
+for ii=1:length(dat)
+    plot(t.*1000,b{1}-b{2},'k','linewidth',5); hold on;
+end
+xlabel('Time (ms)','FontSize',16); ylabel([xl 'difference'],'FontSize',16);
+set(gca,'FontSize',16); set(gca,'XLim',[t(1)*1000 t(end)*1000]);
+box off; set(gca,'TickDir','out');
 
-% colorbar;
-% xlabel('Time (ms)','FontSize',14); ylabel(xl,'FontSize',14);
-% legend(tstruct.legend,'location','SouthEast'); 
-% set(gca,'Ylim',[-2.5 .5]);
-% set(gca,'FontSize',14);
-% hline=refline(0,0); set(hline,'color',[.7 .7 .7]); set(hline,'linewidth',2.5);
-% hline=line([0 0],[-2.5 .5]); set(hline,'color',[.7 .7 .7]); set(hline,'linewidth',2.5);
-% for ii=1:length(dat)
-%     plot(t.*1000,mean(b{ii}(:,i1)),cset{ii},'linewidth',5); hold on;
-% end
-% box off;
-% set(gca,'TickDir','out');
-if strcmp(cfg.type,'Z')
-    CLIM=[-.1 .1];
+subplot(2,1,2);
+for ii=1:length(dat)
+    % cast to logical indices
+    X=size(dat{ii}.powspctrm);
+    x1=false(1,X(2)); x1(cfg.elec)=1;
+    x2=false(1,X(3)); x2(dat_freq{ii})=1;
+    x3=false(1,X(4)); x3(dat_time{ii})=1;
+    y1=dat{ii}.powspctrm(:,x1,x2,x3);
+    y2{ii}=squeeze(mean(mean(y1,2),3));
+    clear X x1 x2 x3 y1 
+end
+
+[~,~,~,stat]=ttest(y2{1}-y2{2});
+for ii=1:length(dat)
+    plot(t.*1000,stat.tstat,'k','linewidth',5); hold on;
+end
+hline=refline(0,0); set(hline,'color',[.7 .7 .7]); set(hline,'linewidth',3);
+hline=line([0 0],[get(gca,'Ylim')]); set(hline,'color',[.7 .7 .7]); set(hline,'linewidth',3);
+% hline=line([-240 -240],[get(gca,'Ylim')]); set(hline,'color',[.7 .7 .7],'linestyle','--'); set(hline,'linewidth',3);
+for ii=1:length(dat)
+    plot(t.*1000,stat.tstat,'k','linewidth',5); hold on;
+end
+xlabel('Time (ms)','FontSize',16); ylabel('T-Test','FontSize',16);
+set(gca,'FontSize',16); set(gca,'XLim',[t(1)*1000 t(end)*1000]);
+box off;
+set(gca,'TickDir','out');
+
+%-------------------------------------------------------------------------%
+% Raw Spectrograms
+%-------------------------------------------------------------------------%
+X1=squeeze(mean(dat{1}.powspctrm(:,cfg.elec,:,:),2));
+X2=squeeze(mean(dat{2}.powspctrm(:,cfg.elec,:,:),2));
+figure(4); set(gcf,'color','w');
     subplot(2,1,1);
-    surf(dat{1}.time,dat{1}.freq,squeeze(mean(X1)),'LineStyle','none');
+    surf(ga.(cfg.contrast{1}).time,ga.(cfg.contrast{1}).freq,squeeze(mean(X1)),'LineStyle','none');
     xlabel('Time (s)','FontSize',14); ylabel('Freq (Hz)','FontSize',14);
     title(tstruct.legend{1},'FontSize',14); set(gca,'FontSize',14); set(gca,'YDir','normal');
     view(0,90); set(gca,'yscale','log'); 
@@ -126,23 +164,21 @@ if strcmp(cfg.type,'Z')
     set(gca,'YLim',[0 30]);
     set(gca,'YTickLabel',[4 10 20 30])
     set(gca,'YTick',[4 10 20 30])
-    % set(gca,'YLim',[4 12]);
     set(gca,'XLim',[dat{1}.time(1) dat{1}.time(end)]);
-    set(gca,'CLim',CLIM); 
-% colorbar;
+    CLim=get(gca,'CLim'); colorbar; % Yoke axes
 
     subplot(2,1,2);
-    surf(dat{2}.time,dat{2}.freq,squeeze(mean(X2)),'LineStyle','none');
+    surf(ga.(cfg.contrast{1}).time,ga.(cfg.contrast{1}).freq,squeeze(mean(X2)),'LineStyle','none');
     xlabel('Time (s)','FontSize',14); ylabel('Freq (Hz)','FontSize',14);
     title(tstruct.legend{2},'FontSize',14); set(gca,'FontSize',14); set(gca,'YDir','normal');
     view(0,90); set(gca,'yscale','log'); 
-    set(gca,'YTickLabel',[4 10 20 30 50])
-    set(gca,'YTick',[4 10 20 30 50])
+    set(gca,'YTickLabel',[4 10 20 30])
+    set(gca,'YTick',[4 10 20 30])
     set(gca,'YLim',[0 30]);
-    set(gca,'YLim',[0 30]);
-    set(gca,'XLim',[dat{2}.time(1) dat{2}.time(end)]);
-    set(gca,'CLim',CLIM); 
-% colorbar;
+    set(gca,'YTickLabel',[4 10 20 30])
+    set(gca,'YTick',[4 10 20 30])
+    set(gca,'XLim',[dat{1}.time(1) dat{1}.time(end)]);
+    set(gca,'CLim',CLim); colorbar;
 end
 
 
