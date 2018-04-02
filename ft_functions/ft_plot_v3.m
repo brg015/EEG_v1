@@ -30,15 +30,10 @@ function Ga=ft_plot_v3(ctrast,cfg)
 Ga=cfg.ga; 
 cfg.subj=logical(cfg.subj); % Ensure cast correctly
 
-% Can't recall why this template was setup
-% cfg_erp2.layout = template{1}; 
-% cfg_erp2.showlabels  = 'yes'; 
-% if ~isempty(bs), cfg_erp2.baseline = bs; end
-% cfg_erp2.ylim=cfg.scale;
-% cfg_erp2.linewidth=2;
-% cfg_erp2.xlim=[-0.3 0.3];
 cfg_filt.lpfilter = 'yes';
 cfg_filt.lpfreq = 10;
+if ~isfield(cfg,'filt'), cfg.filt=0; end
+
 %=========================================================================%
 % Generate Contrast
 %=========================================================================%
@@ -65,7 +60,7 @@ end
 cfg_erp = [];
 cfg_erp.showlabels  = 'yes'; 
 % cfg_erp.baseline = RUN.pre.baseline;
-cfg_erp.ylim=cfg.scale;
+if isfield(cfg,'scale'), cfg_erp.ylim=cfg.scale; end
 cfg_erp.linewidth=2;
 cfg_erp.parameter='avg';
 cfg_erp.layout = cfg.template;

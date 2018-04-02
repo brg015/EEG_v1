@@ -26,13 +26,31 @@ if strcmp(cfg.type,'erp')
     if length(cfg.contrast)==2
         d=cfg.ga.(cfg.contrast{1});
         e=cfg.ga.(cfg.contrast{2});
-        d.individual=d.individual-e.individual;
-        d.individual=d.individual(logical(cfg.L),:,:);
+        if ~isfield(cfg,'test')
+            try
+                d.individual=d.individual-e.individual;
+                d.individual=d.individual(logical(cfg.L),:,:);
+            catch err
+                f=d{1};
+                f.individual=d{1}.avg-e{1}.avg;
+                d=f;
+            end
+        else 
+            [~,~,~,stat]=ttest(d.individual(logical(cfg.L),:,:)-e.individual(logical(cfg.L),:,:));
+            d.individual=stat.tstat;
+            d.individual(abs(d.individual)<cfg.test)=0;
+        end
         V=d; clear d e;
     else
+        try
         d=cfg.ga.(cfg.contrast{1}); 
         d.individual=d.individual(logical(cfg.L),:,:);
         V=d; clear d;
+        catch err
+            d=cfg.ga.(cfg.contrast{1}){1}; 
+            d.individual=d.avg;
+            V=d; clear d;
+        end
     end
 elseif strcmp(cfg.type,'pow')
    if length(cfg.contrast)==2

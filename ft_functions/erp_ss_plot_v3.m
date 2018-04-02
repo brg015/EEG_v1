@@ -13,13 +13,15 @@
 % Description: Plots the difference between two conditions and two time
 % points. Also prefroms a t-test on the difference and displays weather the
 % result is significant or not.
-function val=erp_ss_plot_v3(f,chan,tstruct)
+function SSData=erp_ss_plot_v3(f,chan,tstruct)
 %-------------------------------------------------------------------------%
 % Preset variables
 %-------------------------------------------------------------------------%
 if ~isfield(tstruct,'filter'), tstruct.filter.on=0; end
 if ~isfield(tstruct,'delta'), tstruct.delta=0; end
 if ~isfield(tstruct,'legend'), tstruct.legend=f; end
+if ~isfield(tstruct,'fig'), tstruct.fig=true(1,5); end
+if length(tstruct.fig)<5, tstruct(5)=0; end
 if tstruct.filter.on==1, cfg=tstruct.filter; end
 
 tstruct.subj=logical(tstruct.subj);
@@ -48,8 +50,8 @@ end
 %=========================================================================%
 if isfield(tstruct,'base') 
     for ii=1:length(dat)
-        for jj=1:size(dat{ii}.trial,1)
-            for kk=1:size(dat{ii}.trial,2)
+        for jj=1:size(dat{ii}.individual,1)
+            for kk=1:size(dat{ii}.individual,2)
                 % Pull time series
                 L1=squeeze(dat{ii}.individual(jj,kk,:));
                 L2=L1-mean(L1(dat_base{ii}));
@@ -68,27 +70,36 @@ figure(1);
 % dat_time{#} time to test (T)
 for isub=1:sum(tstruct.subj)
     for ii=1:length(f)
-        val(isub,ii)=mean(mean(squeeze(dat{ii}.individual(isub,chan,dat_time{ii}))));
+        SSData.val(isub,ii)=mean(mean(squeeze(dat{ii}.individual(isub,chan,dat_time{ii}))));
     end
 end
 % ttest of 1 vs 2
 if (tstruct.fig(1)==1 && length(f)==2)
     try
         subplot(2,2,1); set(gcf,'color','w');
-        [~,p,~,~]=ttest(val(:,1)-val(:,2),0,0.05);
-        boxplot(val,'labels',tstruct.legend); title(['p = ' num2str(p)]); grid;
+        [~,p,~,~]=ttest(SSData.val(:,1)-SSData.val(:,2),0,0.05);
+        boxplot(SSData.val,'labels',tstruct.legend(1:2)); title(['p = ' num2str(p)]); grid;
     catch err
     end
     clear p; % val is returned
 end
 
+i1=(dat{1}.time>=tstruct.window(1) & dat{1}.time<tstruct.window(2));
+for ii=1:length(dat)
+    b{ii}=squeeze(mean(dat{ii}.individual(:,chan,i1),2));
+end
+if tstruct.delta==1, b{3}=b{1}-b{2}; end
+t=dat{1}.time(i1);
+% Save the key outputs from this
+DATA=b; TIME=t;
 %=========================================================================%
 % Paper Figures...
 %=========================================================================%
 if tstruct.fig(2)==1
 
+    figure(2);
 if length(f)==2
-    subplot(2,2,2);
+    % subplot(2,2,2);
     cset={'k','k',[0 0 0]};
     wset=[5 5 1];
     lset={'-',':','-.'};
@@ -100,32 +111,33 @@ end
 
 set(gcf,'color','w');
 
- lsize=14;
+lsize=14;
 hwidth=3;
 
-i1=(dat{1}.time>=tstruct.window(1) & dat{1}.time<tstruct.window(2));
-for ii=1:length(dat)
-    b{ii}=squeeze(mean(dat{ii}.individual(:,chan,i1),2));
-end
-if tstruct.delta==1, b{3}=b{1}-b{2}; end
-
-t=dat{1}.time(i1);
-xl='uV';
-
+xl='uV/cm^2';
 for ii=1:length(b)
-    plot(t.*1000,mean(b{ii}),'color',cset{ii},'linewidth',wset(ii),'linestyle',lset{ii}); hold on;
+    if sum(tstruct.subj)>1
+        plot(t.*1000,mean(b{ii}),'color',cset{ii},'linewidth',wset(ii),'linestyle',lset{ii}); hold on;
+    else
+        plot(t.*1000,b{ii},'color',cset{ii},'linewidth',wset(ii),'linestyle',lset{ii}); hold on;
+    end
 end
 
 xlabel('Time (ms)','FontSize',lsize); ylabel(xl,'FontSize',lsize);
 legend(tstruct.legend,'location','SouthEast'); 
 % set(gca,'Ylim',[-2.5 .5]);
 set(gca,'FontSize',lsize);
+set(gca,'FontWeight','bold');
 hline=refline(0,0); set(hline,'color',[.7 .7 .7]); set(hline,'linewidth',hwidth);
 hline=line([0 0],[get(gca,'Ylim')]); set(hline,'color',[.7 .7 .7]); set(hline,'linewidth',hwidth);
 % hline=line([-240 -240],[get(gca,'Ylim')]); set(hline,'color',[.7 .7 .7],'linestyle',':'); set(hline,'linewidth',3);
 
 for ii=1:length(b)
-    plot(t.*1000,mean(b{ii}),'color',cset{ii},'linewidth',wset(ii),'linestyle',lset{ii}); hold on;
+    if sum(tstruct.subj)>1
+        plot(t.*1000,mean(b{ii}),'color',cset{ii},'linewidth',wset(ii),'linestyle',lset{ii}); hold on;
+    else
+        plot(t.*1000,b{ii},'color',cset{ii},'linewidth',wset(ii),'linestyle',lset{ii}); hold on;
+    end
 end
 
 box off;
@@ -135,8 +147,10 @@ end
 %=========================================================================%
 % T figure
 %=========================================================================%
+  figure(1);
 if (tstruct.fig(3)==1 && length(f)==2)
 
+% Smooth data for t-test
 subplot(2,2,3); set(gcf,'color','w');
 for ii=1:length(dat)
     c=1;
@@ -174,17 +188,21 @@ lset={'-'};
 wset=[5 5 1]; lsize=14;
 hwidth=3;
 
-i1=(dat{1}.time>=tstruct.window(1) & dat{1}.time<tstruct.window(2));
-for ii=1:length(dat)
-    b{ii}=squeeze(mean(dat{ii}.individual(:,chan,i1),2));
-end
-if tstruct.delta==1, b{3}=b{1}-b{2}; end
+% i1=(dat{1}.time>=tstruct.window(1) & dat{1}.time<tstruct.window(2));
+% for ii=1:length(dat)
+%     b{ii}=squeeze(mean(dat{ii}.individual(:,chan,i1),2));
+% end
+% if tstruct.delta==1, b{3}=b{1}-b{2}; end
 
 t=dat{1}.time(i1);
 xl='uV';
 
 ii=1;
-plot(t.*1000,mean(b{3}),'color',cset{ii},'linewidth',wset(ii),'linestyle',lset{ii}); hold on;
+if sum(tstruct.subj)>1
+    plot(t.*1000,mean(DATA{3}),'color',cset{ii},'linewidth',wset(ii),'linestyle',lset{ii}); hold on;
+else
+    plot(t.*1000,DATA{3},'color',cset{ii},'linewidth',wset(ii),'linestyle',lset{ii}); hold on;
+end
 
 xlabel('Time (ms)','FontSize',lsize); ylabel(xl,'FontSize',lsize);
 % set(gca,'Ylim',[-2.5 .5]);
@@ -194,10 +212,34 @@ hline=line([0 0],[get(gca,'Ylim')]); set(hline,'color',[.7 .7 .7]); set(hline,'l
 % hline=line([-240 -240],[get(gca,'Ylim')]); set(hline,'color',[.7 .7 .7],'linestyle',':'); set(hline,'linewidth',3);
 
 ii=1;
-plot(t.*1000,mean(b{3}),'color',cset{ii},'linewidth',wset(ii),'linestyle',lset{ii}); hold on;
+plot(t.*1000,mean(DATA{3}),'color',cset{ii},'linewidth',wset(ii),'linestyle',lset{ii}); hold on;
 
 
 box off;
 set(gca,'TickDir','out'); set(gca,'XLim',[t(1)*1000 t(end)*1000])
+
+end
+
+SSData.b=b;
+%=========================================================================%
+% T figure
+%=========================================================================%
+% Important variables by here...
+% b -> our contrast of interest
+if tstruct.fig(5)==1
+ 
+for ii=1:length(DATA)
+    figure(1+ii); set(gcf,'color','w');
+    imagesc(DATA{ii}); L=get(gca,'CLim');
+    if L(1)<0 && L(2)>0, set(gca,'CLim',[-abs(max(L)) max(L)]);
+    elseif L(1)<0 && L(2)<0, set(gca,'Clim',[L(1) 0]);
+    elseif L(1)>0 && L(2)>0, set(gca,'Clim',[0 L(2)]);
+    end
+    h1=get(gca,'XTick');
+    h1=(h1./250+min(TIME)); set(gca,'XTickLabel',h1); grid;
+    colorbar;
+    if ii==3, title('delta'); else title(tstruct.legend{ii}); end
+    ylabel('SubjectID'); xlabel('Time');
+end
 
 end
