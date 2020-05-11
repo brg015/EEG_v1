@@ -1,13 +1,25 @@
 function h = jp_topoplotFT_v3(cfg,varargin)
+% Updated Spring 2019 to plot single values
+%
 % GEIB Presets (ERP)
 cfg.ncontours=20;
 cfg.elecsize=1;
 cfg.latencyInc=cfg.Inc;
 
-X=readlocs(cfg.template); 
-cfg.layout.label={X.labels}';
-cfg.layout.pnt=[[X.X];[X.Y];[X.Z]]';
-clear X;
+%-------------------------------------------------------------------------%
+% Get Positions
+%-------------------------------------------------------------------------%
+if isfield(cfg,'template')
+    X=readlocs(cfg.template); 
+    cfg.layout.label={X.labels}';
+    cfg.layout.pnt=[[X.X];[X.Y];[X.Z]]';
+    clear X;
+elseif isfield(cfg,'position')
+    cfg.layout.label={cfg.position.label}';
+    cfg.layout.pnt=[cfg.position.pnt(:,1);cfg.position.pnt(:,2);cfg.position.pnt(:,3)]';
+else
+    disp('No position information'); return;
+end
 
 cfg.lpfilter = 'no'; cfg.lpfreq = 30; % Gentle filter
 
@@ -41,6 +53,7 @@ if strcmp(cfg.type,'erp')
             d.individual(abs(d.individual)<cfg.test)=0;
         end
         V=d; clear d e;
+        % V.individual(V.individual>0)=0;
     else
         try
         d=cfg.ga.(cfg.contrast{1}); 
@@ -68,7 +81,14 @@ end
 
 % kill right mastoid...
 % V.label(end)=[];
-% V.powspctrm(:,end,:,:)=[];
+% try
+%     V.powspctrm(:,end,:,:)=[];
+% catch err
+%     V.individual(:,end,:)=[];
+% end
+%-------------------------------------------------------------------------%
+% Original Code
+%-------------------------------------------------------------------------%
 
 % JP_TOPOPLOT_FT plots topographic maps using linear griddata
 % interpolation. Based on Biharmonic spline interpolation as implemented in
@@ -103,6 +123,10 @@ end
 % 
 % Joonkoo Park (joonkoo@umass.edu) 4-30-2015
 % Berry van den Berg (berryv.dberg@gmail.com) V06-25-2016
+if ~isfield(cfg,'plotchannellab')
+    cfg.plotchannellab='no';
+end
+% cfg.plotchannellab='yes';
 
 % order the data
 cfg.dataname{1}='V'; Ndata=1;
